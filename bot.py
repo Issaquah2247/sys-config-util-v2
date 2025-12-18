@@ -1,45 +1,270 @@
 import discord
 from discord.ext import commands
 import os
+import random
+import asyncio
+from datetime import timedelta
+import sqlite3
 
-# Set up bot with intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.guilds = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+def init_db():
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (user_id INTEGER PRIMARY KEY, money INTEGER DEFAULT 100,
+                  gang TEXT, role TEXT, bounty INTEGER DEFAULT 0, arrests INTEGER DEFAULT 0)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS drugs
+                 (user_id INTEGER, drug_type TEXT, quantity INTEGER,
+                  PRIMARY KEY (user_id, drug_type))''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+GANGS = {
+    "daltons": {"name": "Daltons Gang", "color": 0xFF0000, "emoji": "🔴"},
+    "wildbunch": {"name": "Wild Bunch", "color": 0x00FF00, "emoji": "🟢"},
+    "josie": {"name": "Josie Gang", "color": 0x0000FF, "emoji": "🔵"},
+    "officers": {"name": "Law Officers", "color": 0xFFD700, "emoji": "⭐"},
+    "bankers": {"name": "Town Bankers", "color": 0x964B00, "emoji": "💰"}
+}
+
+ROLES = ["Leader", "Planner", "Muscle", "Robber", "Horse Manager", "Town Drunk", "Weapons Master", "Medic"]
+
+DRUGS = {
+    "opium": {"name": "Opium", "base_price": 50},
+    "whiskey": {"name": "Whiskey", "base_price": 30},
+    "tobacco": {"name": "Tobacco", "base_price": 20}
+}
+
+HEIST_QUESTIONS = [
+    {"q": "What year did Wild West begin?", "a": ["1865", "1860"], "hints": ["After Civil War"]},
+    {"q": "Famous outlaw?", "a": ["jesse james", "billy the kid", "butch cassidy"], "hints": ["Gang leader"]},
+    {"q": "Cowboy weapon?", "a": ["revolver", "colt", "six shooter"], "hints": ["Handheld gun"]},
+    {"q": "What did cowboys ride?", "a": ["horse"], "hints": ["Four legs"]},
+    {"q": "Wild West town?", "a": ["tombstone", "dodge city", "deadwood"], "hints": ["Gunfights"]}
+]
+
+def get_user(user_id):
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+    user = c.fetchone()
+    if not user:
+        c.execute("INSERT INTO users (user_id) VALUES (?)", (user_id,))
+        conn.commit()
+        user = c.execute("SELECT * FROM users WHERE user_id=?", (user_id,)).fetchone()
+    conn.close()
+    return user
+
+def update_money(user_id, amount):
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    c.execute("UPDATE users SET money = money + ? WHERE user_id = ?", (amount, user_id))
+    conn.commit()
+    conn.close()
+
 @bot.event
 async def on_ready():
-    print(f'{bot.user} has connected to Discord!')
-    print(f'Bot is in {len(bot.guilds)} guilds')
+    print(f'🤠 {bot.user} (Mira Bot) is online!')
 
-@bot.command(name='ping')
-async def ping(ctx):
-    """Check if bot is responding"""
-    await ctx.send(f'Pong! Latency: {round(bot.latency * 1000)}ms')
-
-@bot.command(name='hello')
-async def hello(ctx):
-    """Say hello"""
-    await ctx.send(f'Hello {ctx.author.mention}! 👋')
-
-@bot.command(name='info')
-async def info(ctx):
-    """Get bot info"""
-    embed = discord.Embed(
-        title='Bot Information',
-        description='A simple Discord bot hosted on Render!',
-        color=discord.Color.blue()
-    )
-    embed.add_field(name='Servers', value=len(bot.guilds))
-    embed.add_field(name='Latency', value=f'{round(bot.latency * 1000)}ms')
+@bot.command(name='mira')
+async def mira_intro(ctx):
+    embed = discord.Embed(title="🤠 Howdy! I'm Mira!", 
+        description="Short gal with curly brown hair running the Wild West!\n\n"
+                    "**Commands:** !balance, !joinggang, !work, !makedrug, !selldrug, !heist, !rob, !duel, !arrest",
+        color=0xD4AF37)
     await ctx.send(embed=embed)
 
-# Run the bot
+@bot.command(name='balance', aliases=['bal'])
+async def balance(ctx, member: discord.Member = None):
+    member = member or ctx.author
+    user = get_user(member.id)
+    embed = discord.Embed(title=f"💰 {member.display_name}", 
+        description=f"Cash: ${user[1]}\nGang: {user[2] or 'None'}\nRole: {user[3] or 'None'}\nBounty: ${user[4]}", 
+        color=0xFFD700)
+    await ctx.send(embed=embed)
+
+@bot.command(name='joinggang')
+async def join_gang(ctx, gang_name: str):
+    gang_name = gang_name.lower()
+    if gang_name not in GANGS:
+        await ctx.send(f"❌ Invalid! Choose: {', '.join(GANGS.keys())}")
+        return
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    c.execute("UPDATE users SET gang = ? WHERE user_id = ?", (gang_name, ctx.author.id))
+    conn.commit()
+    conn.close()
+    await ctx.send(f"{GANGS[gang_name]['emoji']} Joined **{GANGS[gang_name]['name']}**!")
+
+@bot.command(name='work')
+async def work(ctx):
+    jobs = [("mined gold", random.randint(20, 50)), ("herded cattle", random.randint(15, 40))]
+    job, pay = random.choice(jobs)
+    update_money(ctx.author.id, pay)
+    await ctx.send(f"💼 {job} → **${pay}**")
+
+@bot.command(name='makedrug')
+async def make_drug(ctx, drug_type: str, amount: int = 1):
+    drug_type = drug_type.lower()
+    if drug_type not in DRUGS:
+        await ctx.send(f"❌ Choose: {', '.join(DRUGS.keys())}")
+        return
+    cost = int(DRUGS[drug_type]['base_price'] * amount * 0.5)
+    user = get_user(ctx.author.id)
+    if user[1] < cost:
+        await ctx.send(f"❌ Need ${cost}!")
+        return
+    update_money(ctx.author.id, -cost)
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO drugs VALUES (?, ?, ?) ON CONFLICT(user_id, drug_type) DO UPDATE SET quantity = quantity + ?",
+              (ctx.author.id, drug_type, amount, amount))
+    conn.commit()
+    conn.close()
+    await ctx.send(f"🧪 Made {amount} {DRUGS[drug_type]['name']}!")
+
+@bot.command(name='selldrug')
+async def sell_drug(ctx, drug_type: str, amount: int = 1):
+    drug_type = drug_type.lower()
+    if drug_type not in DRUGS:
+        return
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    result = c.execute("SELECT quantity FROM drugs WHERE user_id=? AND drug_type=?", (ctx.author.id, drug_type)).fetchone()
+    if not result or result[0] < amount:
+        await ctx.send("❌ Don't have enough!")
+        conn.close()
+        return
+    price = int(DRUGS[drug_type]['base_price'] * amount * random.uniform(0.8, 1.5))
+    c.execute("UPDATE drugs SET quantity = quantity - ? WHERE user_id=? AND drug_type=?", (amount, ctx.author.id, drug_type))
+    conn.commit()
+    conn.close()
+    update_money(ctx.author.id, price)
+    await ctx.send(f"💰 Sold for **${price}**!")
+
+@bot.command(name='heist')
+@commands.cooldown(1, 300, commands.BucketType.guild)
+async def heist(ctx):
+    user = get_user(ctx.author.id)
+    if not user[2]:
+        await ctx.send("❌ Need gang!")
+        return
+    embed = discord.Embed(title="🏦 HEIST!", description=f"{ctx.author.display_name} planning heist!\nReact ✅ (30s)", color=0xFF0000)
+    msg = await ctx.send(embed=embed)
+    await msg.add_reaction("✅")
+    await asyncio.sleep(30)
+    msg = await ctx.channel.fetch_message(msg.id)
+    participants = [ctx.author]
+    for reaction in msg.reactions:
+        if str(reaction.emoji) == "✅":
+            async for user in reaction.users():
+                if not user.bot and user != ctx.author:
+                    participants.append(user)
+    questions = random.sample(HEIST_QUESTIONS, 3)
+    correct = 0
+    for i, q in enumerate(questions, 1):
+        await ctx.send(f"**Q{i}:** {q['q']}")
+        def check(m):
+            return m.author in participants and m.channel == ctx.channel
+        try:
+            answer = await bot.wait_for('message', timeout=20.0, check=check)
+            if any(a in answer.content.lower() for a in q['a']):
+                correct += 1
+                await ctx.send("✅")
+            else:
+                await ctx.send(f"❌ Hint: {q['hints'][0]}")
+        except asyncio.TimeoutError:
+            await ctx.send("⏰")
+    if correct >= 2:
+        reward = random.randint(500, 1500) // len(participants)
+        for p in participants:
+            update_money(p.id, reward)
+        await ctx.send(f"🎉 SUCCESS! +${reward} each!")
+    else:
+        await ctx.send(f"❌ FAILED! {correct}/3")
+
+@bot.command(name='rob')
+async def rob(ctx, member: discord.Member):
+    if member.bot or member == ctx.author:
+        return
+    target = get_user(member.id)
+    if target[1] < 50:
+        await ctx.send("❌ Too broke!")
+        return
+    if random.random() < 0.5:
+        stolen = int(target[1] * random.uniform(0.1, 0.3))
+        update_money(ctx.author.id, stolen)
+        update_money(member.id, -stolen)
+        await ctx.send(f"💰 Stole ${stolen}!")
+    else:
+        await ctx.send("❌ Failed!")
+
+@bot.command(name='duel')
+async def duel(ctx, member: discord.Member, amount: int):
+    if member.bot or member == ctx.author:
+        return
+    user = get_user(ctx.author.id)
+    target = get_user(member.id)
+    if user[1] < amount or target[1] < amount:
+        await ctx.send("❌ Can't afford!")
+        return
+    await ctx.send(f"🔫 {member.mention} accept ${amount} duel? (yes/no)")
+    def check(m):
+        return m.author == member and m.channel == ctx.channel
+    try:
+        msg = await bot.wait_for('message', timeout=30.0, check=check)
+        if msg.content.lower() != 'yes':
+            await ctx.send("❌ Declined!")
+            return
+    except asyncio.TimeoutError:
+        return
+    winner = random.choice([ctx.author, member])
+    loser = member if winner == ctx.author else ctx.author
+    update_money(winner.id, amount)
+    update_money(loser.id, -amount)
+    await ctx.send(f"🎯 {winner.mention} won ${amount}!")
+
+@bot.command(name='arrest')
+@commands.has_permissions(moderate_members=True)
+async def arrest(ctx, member: discord.Member):
+    user = get_user(ctx.author.id)
+    if user[2] != 'officers':
+        await ctx.send("❌ Officers only!")
+        return
+    timeout_mins = random.randint(5, 20)
+    try:
+        await member.timeout(timedelta(minutes=timeout_mins), reason="Arrested")
+        await ctx.send(f"👮 Arrested {member.mention} for **{timeout_mins} mins**!")
+    except:
+        await ctx.send("❌ Can't arrest!")
+
+@bot.command(name='assignrole')
+async def assign_role(ctx, member: discord.Member, role: str):
+    user = get_user(ctx.author.id)
+    if user[3] != 'Leader':
+        await ctx.send("❌ Leaders only!")
+        return
+    if role not in ROLES:
+        await ctx.send(f"❌ Choose: {', '.join(ROLES)}")
+        return
+    conn = sqlite3.connect('wildwest.db')
+    c = conn.cursor()
+    c.execute("UPDATE users SET role = ? WHERE user_id = ?", (role, member.id))
+    conn.commit()
+    conn.close()
+    await ctx.send(f"✅ {member.mention} → **{role}**!")
+
 if __name__ == '__main__':
     TOKEN = os.getenv('DISCORD_TOKEN')
     if not TOKEN:
-        print('Error: DISCORD_TOKEN not found in environment variables')
+        print('Error: DISCORD_TOKEN not found!')
     else:
         bot.run(TOKEN)
