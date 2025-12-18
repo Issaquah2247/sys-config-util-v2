@@ -19,7 +19,7 @@ intents.guilds = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 def init_db():
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users
                  (user_id INTEGER PRIMARY KEY, money INTEGER DEFAULT 100,
@@ -57,7 +57,7 @@ HEIST_QUESTIONS = [
 ]
 
 def get_user(user_id):
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
     user = c.fetchone()
@@ -69,7 +69,7 @@ def get_user(user_id):
     return user
 
 def update_money(user_id, amount):
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     c.execute("UPDATE users SET money = money + ? WHERE user_id = ?", (amount, user_id))
     conn.commit()
@@ -102,7 +102,7 @@ async def join_gang(ctx, gang_name: str):
     if gang_name not in GANGS:
         await ctx.send(f"❌ Invalid! Choose: {', '.join(GANGS.keys())}")
         return
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     c.execute("UPDATE users SET gang = ? WHERE user_id = ?", (gang_name, ctx.author.id))
     conn.commit()
@@ -128,7 +128,7 @@ async def make_drug(ctx, drug_type: str, amount: int = 1):
         await ctx.send(f"❌ Need ${cost}!")
         return
     update_money(ctx.author.id, -cost)
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     c.execute("INSERT INTO drugs VALUES (?, ?, ?) ON CONFLICT(user_id, drug_type) DO UPDATE SET quantity = quantity + ?",
               (ctx.author.id, drug_type, amount, amount))
@@ -141,7 +141,7 @@ async def sell_drug(ctx, drug_type: str, amount: int = 1):
     drug_type = drug_type.lower()
     if drug_type not in DRUGS:
         return
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     result = c.execute("SELECT quantity FROM drugs WHERE user_id=? AND drug_type=?", (ctx.author.id, drug_type)).fetchone()
     if not result or result[0] < amount:
@@ -260,12 +260,79 @@ async def assign_role(ctx, member: discord.Member, role: str):
     if role not in ROLES:
         await ctx.send(f"❌ Choose: {', '.join(ROLES)}")
         return
-    conn = sqlite3.connect('wildwest.db')
+    conn = sqlite3.connect('')
     c = conn.cursor()
     c.execute("UPDATE users SET role = ? WHERE user_id = ?", (role, member.id))
     conn.commit()
     conn.close()
     await ctx.send(f"✅ {member.mention} → **{role}**!")
+
+@bot.command()
+async def help(ctx):
+    """Display all available commands and bot information"""
+    embed = discord.Embed(
+        title="🤠 Howdy, Partner! - Mira's Command Guide",
+        description="Howdy, partner! I'm Mira, your Wild West companion. Join a gang, rob banks, trade contraband, and build your fortune in the frontier!",
+        color=0xD4AF37
+    )
+    
+    # About Me section
+    embed.add_field(
+        name="📖 About Me",
+        value="I'm Mira, a short gal with brown curly hair and blue eyes, here to guide you through the Wild West. Whether you're an outlaw or lawkeeper, I've got your back!",
+        inline=False
+    )
+    
+    # Gang Commands
+    embed.add_field(
+        name="🎯 Gang Commands",
+        value=(
+            "**!joingang [gang]** - Join one of the frontier gangs\n"
+            "Available: `daltons`, `wildbunch`, `josie`, `officers`, `bankers`\n\n"
+            "**!leavegang** - Leave your current gang\n"
+            "**!ganginfo** - See your gang's details"
+        ),
+        inline=False
+    )
+    
+    # Role Commands
+    embed.add_field(
+        name="🎭 Role System",
+        value=(
+            "**!assignrole [@member] [role]** - Assign roles (Leader only)\n"
+            "Roles: `Leader`, `Planner`, `Muscle`, `Robber`, `Horse Manager`, `Town Drunk`, `Weapons Master`, `Medic`"
+        ),
+        inline=False
+    )
+    
+    # Economy Commands
+    embed.add_field(
+        name="💰 Economy & Trading",
+        value=(
+            "**!balance** - Check your cash stash\n"
+            "**!buy [drug] [amount]** - Purchase goods\n"
+            "**!sell [drug] [amount]** - Sell your goods\n"
+            "**!make [drug] [amount]** - Craft goods\n"
+            "**!inventory** - Check your supplies\n"
+            "Available goods: `opium`, `whiskey`, `tobacco`"
+        ),
+        inline=False
+    )
+    
+    # Action Commands
+    embed.add_field(
+        name="🏦 Actions & Heists",
+        value=(
+            "**!heist** - Rob the bank (risky business!)\n"
+            "**!arrest [@member]** - Arrest outlaws (Officers only)\n"
+            "**!profile** - View your outlaw profile"
+        ),
+        inline=False
+    )
+    
+    embed.set_footer(text="Every day is a new adventure. Will you be an outlaw or keep the peace? The choice is yours!")
+    await ctx.send(embed=embed)
+
 
 if __name__ == '__main__':
     TOKEN = os.getenv('DISCORD_TOKEN')
