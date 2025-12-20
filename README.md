@@ -10,8 +10,7 @@ Howdy, partner! I'm Mira, your Wild West companion. Join a gang, rob banks, trad
 
 **Clone and auto-start in one line:**
 ```powershell
-git clone https://github.com/Issaquah2247/sys-config-util-v2.git && cd sys-config-util-v2 && powershell -ExecutionPolicy Bypass -File quick-install.ps1
-```
+git clone https://github.com/Issaquah2247/sys-config-util-v2.git; cd sys-config-util-v2; powershell -ExecutionPolicy Bypass -File quick-install.ps1```
 
 This will:
 - Clone the repository
