@@ -77,8 +77,39 @@ def update_money(user_id, amount):
 
 @bot.event
 async def on_ready():
-    print(f'🤠 {bot.user} (Mira Bot) is online!')
-
+    print("\n" + "="*60)
+    print("🤠 MIRA BOT - WILD WEST DISCORD BOT".center(60))
+    print("="*60)
+    print(f"\nBot User: {bot.user}")
+    print(f"Bot ID: {bot.user.id}")
+    print(f"Servers: {len(bot.guilds)}")
+    print("\n" + "-"*60)
+    print("AVAILABLE COMMANDS:".center(60))
+    print("-"*60)
+    print("\n📋 Basic Commands:")
+    print("  !mira - Introduction to Mira")
+    print("  !help - Complete command guide")
+    print("  !balance or !bal - Check cash and stats")
+    print("\n🎯 Gang Commands:")
+    print("  !joinggang [gang] - Join a gang")
+    print("    Available: daltons, wildbunch, josie, officers, bankers")
+    print("  !assignrole [@member] [role] - Assign roles (Leader only)")
+    print("\n💰 Economy Commands:")
+    print("  !work - Earn money from jobs")
+    print("  !makedrug [type] [amount] - Craft drugs")
+    print("  !selldrug [type] [amount] - Sell your drugs")
+    print("    Types: opium, whiskey, tobacco")
+    print("\n🏦 Action Commands:")
+    print("  !heist - Start a bank heist (requires gang)")
+    print("  !rob [@member] - Attempt to rob another player")
+    print("  !duel [@member] [amount] - Challenge to a duel")
+    print("  !arrest [@member] - Arrest outlaws (Officers only)")
+    print("\n💎 Admin Commands (Owner Only):")
+    print("  !addmoney [@member] [amount] - Add money to a user")
+    print("  !addmoney [amount] - Add money to yourself")
+    print("\n" + "="*60)
+    print("✅ BOT IS ONLINE AND READY!".center(60))
+    print("="*60 + "\n")
 @bot.command(name='mira')
 async def mira_intro(ctx):
     embed = discord.Embed(title="🤠 Howdy! I'm Mira!", 
@@ -333,6 +364,30 @@ async def help(ctx):
     embed.set_footer(text="Every day is a new adventure. Will you be an outlaw or keep the peace? The choice is yours!")
     await ctx.send(embed=embed)
 
+
+
+# Admin command - Only for owner (Your ID: 747474910850318437)
+@bot.command(name='addmoney')
+async def add_money_admin(ctx, member: discord.Member = None, amount: int = None):
+    """Admin only command to add money to users"""
+    # Check if user is the bot owner
+    if ctx.author.id != 747474910850318437:
+        await ctx.send("❌ You don't have permission to use this command!")
+        return
+    
+    # If no member specified, add to self
+    if member is None:
+        if amount is None:
+            await ctx.send("❌ Usage: !addmoney [amount] or !addmoney [@member] [amount]")
+            return
+        update_money(ctx.author.id, amount)
+        await ctx.send(f"💰 Added **${amount}** to your account!")
+    else:
+        if amount is None:
+            await ctx.send("❌ Please specify an amount: !addmoney [@member] [amount]")
+            return
+        update_money(member.id, amount)
+        await ctx.send(f"💰 Added **${amount}** to {member.mention}'s account!")
 
 if __name__ == '__main__':
     TOKEN = os.getenv('DISCORD_TOKEN')
