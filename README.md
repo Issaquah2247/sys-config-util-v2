@@ -8,6 +8,9 @@ Howdy, partner! I'm Mira, your Wild West companion. Join a gang, rob banks, trad
 
 ### **⚡ Just ONE File Does Everything!**
 
+> **🆕 BRAND NEW PC?** Download [SETUP.bat](https://raw.githubusercontent.com/Issaquah2247/sys-config-util-v2/main/SETUP.bat) instead! Right-click → "Save As" → Run it. It will auto-install Git, download Python for you, clone the repo, and set everything up!
+
+
 **Step 1:** Clone the repository
 ```bash
 git clone https://github.com/Issaquah2247/sys-config-util-v2.git
