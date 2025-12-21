@@ -1,15 +1,25 @@
 @echo off
+setlocal enabledelayedexpansion
 color 0A
-title Mira Bot - Auto-Installer & Updater
+title Mira Bot - One-Click Setup
 
 echo ========================================
-echo    MIRA BOT - AUTO INSTALLER/UPDATER
-echo    Wild West Discord Bot Setup
+echo   MIRA BOT - ONE-CLICK INSTALLER
+echo   Wild West Discord Bot Setup
+echo ========================================
+echo.
+echo This will:
+echo   - Check Git and Python installation
+echo   - Clone/update repository
+echo   - Install all dependencies
+echo   - Configure your Discord token
+echo   - Start the bot automatically
+echo.
 echo ========================================
 echo.
 
 REM Check if Git is installed
-echo [1/5] Checking Git installation...
+echo [1/6] Checking Git installation...
 git --version >nul 2>&1
 if errorlevel 1 (
     echo Git not found. Installing Git...
@@ -22,11 +32,10 @@ if errorlevel 1 (
 ) else (
     echo Git is installed!
 )
-
 echo.
 
 REM Check if Python is installed
-echo [2/5] Checking Python installation...
+echo [2/6] Checking Python installation...
 python --version >nul 2>&1
 if errorlevel 1 (
     echo ERROR: Python is not installed!
@@ -37,12 +46,11 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-
 echo Python is installed!
 echo.
 
 REM Auto-update from GitHub
-echo [3/5] Checking for updates from GitHub...
+echo [3/6] Checking for updates from GitHub...
 if exist .git (
     echo Pulling latest updates...
     git pull origin main
@@ -53,30 +61,26 @@ if exist .git (
         echo Successfully updated to latest version!
     )
 ) else (
-    echo First time setup - cloning repository...
-    echo Note: Already in repository directory.
+    echo First time setup detected.
 )
-
 echo.
 
 REM Install dependencies
-echo [4/5] Installing/Updating required packages...
+echo [4/6] Installing/Updating required packages...
 echo This may take a minute...
 echo.
-pip install -r requirements.txt --upgrade
+pip install -r requirements.txt --upgrade --quiet
 if errorlevel 1 (
     echo ERROR: Failed to install dependencies!
     echo Please check your internet connection and try again.
     pause
     exit /b 1
 )
-
-echo.
 echo Packages installed/updated successfully!
 echo.
 
 REM Create .env file
-echo [5/5] Setting up configuration...
+echo [5/6] Setting up configuration...
 if exist .env (
     echo .env file already exists.
     set /p overwrite="Do you want to update your Discord token? (Y/N): "
@@ -88,7 +92,7 @@ if exist .env (
 :setup_token
 echo.
 echo ----------------------------------------
-echo    DISCORD BOT TOKEN SETUP
+echo   DISCORD BOT TOKEN SETUP
 echo ----------------------------------------
 echo.
 echo To get your Discord Bot Token:
@@ -112,48 +116,41 @@ echo Token saved successfully!
 echo.
 
 :skip_token
-
 REM Create database
 if not exist mira_bot.db (
     echo Database will be created on first run.
 ) else (
     echo Database already exists.
 )
+echo.
+
+echo ========================================
+echo   INSTALLATION COMPLETE!
+echo ========================================
+echo.
+echo [6/6] Starting bot automatically...
+echo.
+
+REM Start the bot immediately
+echo Starting Mira Bot in background...
+start "" /min cmd /c "@echo off & color 0A & title Mira Bot - Running & python main.py & pause"
 
 echo.
 echo ========================================
-echo    INSTALLATION COMPLETE!
+echo Bot is now running in the background!
 echo ========================================
 echo.
-echo Your bot is ready to run!
+echo The bot is running in a minimized window.
+echo To view the bot console, look for:
+echo   "Mira Bot - Running" in your taskbar
 echo.
-echo IMPORTANT: This script also serves as an AUTO-UPDATER.
-echo Run this file anytime to update to the latest version!
+echo To stop the bot:
+echo   - Find the minimized window and close it
+echo   - OR run uninstall.bat to remove everything
 echo.
-echo To start the bot:
-echo   - Double-click 'run_background.bat' to run in background OR
-echo   - Double-click 'run.bat' for normal mode
+echo To restart the bot later:
+echo   - Run install.bat again (it will auto-update)
 echo.
+echo ========================================
 echo.
-echo Would you like to start the bot now?
-set /p start_bot="Start in [B]ackground, [N]ormal mode, or [S]kip? (B/N/S): "
-
-if /i "!start_bot!"=="B" (
-    echo.
-    echo Starting bot in background mode...
-    start run_background.bat
-    exit
-) else if /i "!start_bot!"=="N" (
-    echo.
-    echo Starting bot in normal mode...
-    start run.bat
-    exit
-) else (
-    echo.
-    echo Skipping auto-start.
-    echo You can run the bot anytime by double-clicking:
-    echo   - run_background.bat (background mode)
-    echo   - run.bat (normal mode)
-    echo.
-    pause
-)
+pause
