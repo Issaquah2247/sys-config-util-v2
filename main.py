@@ -132,12 +132,12 @@ async def on_ready():
     print("  !buyhorse [type] - Buy a Wild West horse")
     print("  !property - View your properties and horses")
 print("  Houses: tent, cabin, ranch, saloon, manor")
-    t("  Horses: mare, mustang, thoroughbred, warhorse, arabian")
+    print(" Horses: mare, mustang, thoroughbred, warhorse, arabian")
 print("  !arrest [@member] - Arrest outlaws (Officers only)")
     t("\n💎 Admin Commands (Owner Only):")
 print("  !addmoney [@member] [amount] - Add money to a user")
-    t("  !addmoney [amount] - Add money to yourself")
-    print("\n" + "="*60)
+    print(" !addmoney [amount] - Add money to yourself")
+print("\n" + "="*60)
         
     # Sync slash commands
     await bot.tree.sync()
