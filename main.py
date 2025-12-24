@@ -127,7 +127,7 @@ async def on_ready():
     print("  !heist - Start a bank heist (requires gang)")
     print("  !rob [@member] - Attempt to rob another player")
     print("  !duel [@member] [amount] - Challenge to a duel")
-        print("\n🏠 Property Commands:")
+    print("\n🏠 Property Commands:")
     print("  !buyhouse [type] - Purchase frontier property")
     print("  !buyhorse [type] - Buy a Wild West horse")
     print("  !property - View your properties and horses")
