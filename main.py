@@ -28,8 +28,8 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS drugs
                  (user_id INTEGER, drug_type TEXT, quantity INTEGER,
                   PRIMARY KEY (user_id, drug_type))''')
-        c.execute('''CREATE TABLE IF NOT EXISTS properties
-                 (user_id INTEGER, property_type TEXT, property_name TEXT,
+    c.execute('''CREATE TABLE IF NOT EXISTS properties
+                                  (user_id INTEGER,  property_type TEXT, property_name TEXT,
                   PRIMARY KEY (user_id, property_type))''')
     c.execute('''CREATE TABLE IF NOT EXISTS horses
                  (user_id INTEGER PRIMARY KEY, horse_type TEXT, horse_name TEXT)''')
