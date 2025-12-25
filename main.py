@@ -148,7 +148,7 @@ print("="*60 + "\n")
 async def mira_intro(ctx):
     embed = discord.Embed(title="🤠 Howdy! I'm Mira!", 
         description="Short gal with curly brown hair running the Wild West!\n\n"
-                    "**Commands:** !balance, !joinggang, !work, !makedrug, !selldrug, !heist, !rob, !duel, !arrest",
+                    @bot"**Commands:** !balance, !joinggang, !work, !makedrug, !selldrug, !heist, !rob, !duel, !arrest",
         color=0xD4AF37)
     await ctx.send(embed=embed)
 
