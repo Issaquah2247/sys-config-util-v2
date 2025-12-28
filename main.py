@@ -59,7 +59,6 @@ DRUGS = {
 # Wild West Houses - Period-accurate frontier dwellings
 HOUSES = {
     "tent": {"name": "Canvas Tent", "price": 100, "emoji": "⛺", "description": "Basic shelter from the elements"},
-144
     "cabin": {"name": "Wooden Cabin", "price": 500, "emoji": "🏚️", "description": "Small pioneer homestead"},
     "ranch": {"name": "Ranch House", "price": 1500, "emoji": "🏡", "description": "Sturdy frontier ranch"},
     "saloon": {"name": "Saloon", "price": 3000, "emoji": "🍺", "description": "Profitable business establishment"},
