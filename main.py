@@ -140,7 +140,7 @@ print("  !addmoney [@member] [amount] - Add money to a user")
 print(" !addmoney [amount] - Add money to yourself")
 print("\n" + "="*60)
                 
-    # Sync slash commands
+        # Sync slash commands
     await bot.tree.sync()
     print("🔄 Slash commands synced!")
     print("✅ BOT IS ONLINE AND READY!".center(60))
